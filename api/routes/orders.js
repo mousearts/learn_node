@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const mongoose = require("mongoose");
+
 const Order = require("../models/order");
 const Product = require("../models/product");
 
@@ -10,7 +11,7 @@ router.get("/", (req, res, next) => {
   Order.find()
     .select("product quantity _id")
     // Merge with other models ('model', needed table)
-    .populate('product', 'name price')
+    .populate("product", "name price")
     .exec()
     .then(docs => {
       res.status(200).json({
@@ -21,6 +22,7 @@ router.get("/", (req, res, next) => {
             product: doc.product,
             quantity: doc.quantity,
             request: {
+              details: "Getting order by id",
               type: "GET",
               url: "http://localhost:3000/orders/" + doc._id
             }
@@ -88,22 +90,27 @@ router.post("/", (req, res, next) => {
 
 router.get("/:orderId", (req, res, next) => {
   Order.findById(req.params.orderId)
-    .populate('product', 'name price')
+    .populate("product", "name price")
     .exec()
     .then(order => {
-      res.status(200).json({
-        order: order,
-        request: {
-          type: "GET",
-          url: "http://localhost:3000/orders"
-        }
-      });
+      if (order) {
+        res.status(200).json({
+          order: order,
+          request: {
+            type: "GET",
+            url: "http://localhost:3000/orders"
+          }
+        });
+      } else {
+        res.status(404).json({
+          message: "Order not found"
+        });
+      }
     })
     .catch(err => {
-      res.status(500),
-        json({
-          error: err
-        });
+      res.status(500).json({
+        error: err
+      });
     });
   //   res.status(200).json({
   //     message: "Order details",
@@ -113,8 +120,8 @@ router.get("/:orderId", (req, res, next) => {
 
 router.delete("/:orderId", (req, res, next) => {
   Order.remove({
-      _id: req.params.orderId
-    })
+    _id: req.params.orderId
+  })
     .exec()
     .then(result => {
       if (!order) {

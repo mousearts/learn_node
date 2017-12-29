@@ -1,27 +1,34 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-//Upload file
-const multer = require('multer');
+
+// Upload file
+const multer = require("multer");
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './uploads/');
+  destination: function(req, file, cb) {
+    cb(null, "./uploads/");
   },
-  filename: function (req, file, cb) {
-    cb(null, new Date().toISOString + file.originalname);
+  filename: function(req, file, cb) {
+    cb(
+      null,
+      // TO ISO STRING di replace : dengan -
+      new Date().toISOString().replace(/:/g, "-") + "_" + file.originalname
+    );
   }
-})
+});
 
 const fileFilter = (req, file, cb) => {
   // Reject a file
-  if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
+  if (
+    file.mimetype === "image/jpeg" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/png"
+  ) {
     cb(null, true);
   } else {
     cb(null, false);
   }
-
-
 };
 
 const upload = multer({
@@ -37,7 +44,8 @@ const Product = require("../models/product");
 router.get("/", (req, res, next) => {
   Product.find()
     // .select()
-    .select("name price _id")
+    // Insert Product Image Multer
+    .select("name price _id productImage")
     .exec()
     .then(docs => {
       const response = {
@@ -46,6 +54,7 @@ router.get("/", (req, res, next) => {
           return {
             name: doc.name,
             price: doc.price,
+            productImage: doc.productImage,
             _id: doc._id,
             request: {
               type: "GET",
@@ -76,12 +85,15 @@ router.get("/", (req, res, next) => {
   //   });
 });
 
-router.post("/", upload.single('productImage'), (req, res, next) => {
+router.post("/", upload.single("productImage"), (req, res, next) => {
+  // console.log(new Date().toISOString().replace(/:/g, "-"));
   console.log(req.file);
   const product = new Product({
     _id: new mongoose.Types.ObjectId(),
     name: req.body.name,
-    price: req.body.price
+    price: req.body.price,
+    //How to get path properties from multer
+    productImage: req.file.path.replace(/\\/g, "/")
   });
   product
     .save()
@@ -92,6 +104,7 @@ router.post("/", upload.single('productImage'), (req, res, next) => {
         createdProduct: {
           name: result.name,
           price: result.price,
+          productImage: result.productImage,
           _id: result._id,
           request: {
             type: "GET",
@@ -117,7 +130,7 @@ router.post("/", upload.single('productImage'), (req, res, next) => {
 router.get("/:productId", (req, res, next) => {
   const id = req.params.productId;
   Product.findById(id)
-    .select("name price _id")
+    .select("name price _id productImage")
     .exec()
     .then(doc => {
       console.log("From database", doc);
@@ -132,11 +145,9 @@ router.get("/:productId", (req, res, next) => {
         });
         // res.status(200).json(doc);
       } else {
-        res
-          .status(404)
-          .json({
-            message: "No valid entry found for provided ID"
-          });
+        res.status(404).json({
+          message: "No valid entry found for provided ID"
+        });
       }
     })
     .catch(err => {
@@ -166,11 +177,14 @@ router.patch("/:productId", (req, res, next) => {
   for (const ops of req.body) {
     updateOps[ops.propName] = ops.value;
   }
-  Product.update({
+  Product.update(
+    {
       _id: id
-    }, {
+    },
+    {
       $set: updateOps
-    })
+    }
+  )
     .exec()
     .then(result => {
       //   console.log(result);
@@ -197,8 +211,8 @@ router.patch("/:productId", (req, res, next) => {
 router.delete("/:productId", (req, res, next) => {
   const id = req.params.productId;
   Product.remove({
-      _id: id
-    })
+    _id: id
+  })
     .exec()
     .then(result => {
       //   res.status(200).json(result);
