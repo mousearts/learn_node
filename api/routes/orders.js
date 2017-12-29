@@ -9,6 +9,8 @@ const Product = require("../models/product");
 router.get("/", (req, res, next) => {
   Order.find()
     .select("product quantity _id")
+    // Merge with other models ('model', needed table)
+    .populate('product', 'name price')
     .exec()
     .then(docs => {
       res.status(200).json({
@@ -86,6 +88,7 @@ router.post("/", (req, res, next) => {
 
 router.get("/:orderId", (req, res, next) => {
   Order.findById(req.params.orderId)
+    .populate('product', 'name price')
     .exec()
     .then(order => {
       res.status(200).json({
@@ -109,7 +112,9 @@ router.get("/:orderId", (req, res, next) => {
 });
 
 router.delete("/:orderId", (req, res, next) => {
-  Order.remove({ _id: req.params.orderId })
+  Order.remove({
+      _id: req.params.orderId
+    })
     .exec()
     .then(result => {
       if (!order) {
