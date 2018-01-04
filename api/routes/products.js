@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+const checkAuth = require("../middleware/check-auth");
 
 // Upload file
 const multer = require("multer");
@@ -85,7 +86,7 @@ router.get("/", (req, res, next) => {
   //   });
 });
 
-router.post("/", upload.single("productImage"), (req, res, next) => {
+router.post("/", checkAuth, upload.single("productImage"), (req, res, next) => {
   // console.log(new Date().toISOString().replace(/:/g, "-"));
   console.log(req.file);
   const product = new Product({
@@ -169,7 +170,7 @@ router.get("/:productId", (req, res, next) => {
   //   }
 });
 
-router.patch("/:productId", (req, res, next) => {
+router.patch("/:productId", checkAuth, (req, res, next) => {
   const id = req.params.productId;
   const updateOps = {};
   // Looped so only change the necessary object
@@ -208,7 +209,7 @@ router.patch("/:productId", (req, res, next) => {
   //   });
 });
 
-router.delete("/:productId", (req, res, next) => {
+router.delete("/:productId", checkAuth, (req, res, next) => {
   const id = req.params.productId;
   Product.remove({
     _id: id
